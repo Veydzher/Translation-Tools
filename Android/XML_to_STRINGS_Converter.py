@@ -146,8 +146,8 @@ def import_strings(source_file: str, output_file: str, strings: dict):
         for str_obj in root.iter("string"):
             obj_name = str_obj.get("name")
             if obj_name in strings and obj_name:
-                old_text = unquote_unicode(str_obj.text) # type: ignore
-                new_text = unquote_unicode(strings[obj_name])
+                old_text = str_obj.text # type: ignore
+                new_text = strings[obj_name]
                 if old_text != new_text and str_obj.text is not None:
                     print(f"Changed: {obj_name}")
                     print(f"  From: {repr(str_obj.text)}")
@@ -182,7 +182,7 @@ def main():
         
         if choice == 1:
             xml_file_path = input("Enter the path to a .xml file: ").strip().strip('"')
-            if not xml_file_path or os.path.exists(xml_file_path):
+            if not xml_file_path or not os.path.exists(xml_file_path):
                 raise FileNotFoundError("Specified .xml file not found! Try again.")
             elif not xml_file_path.endswith(".xml"):
                 raise InvalidFileFormat("Invalid file format! Should be .xml!")
@@ -202,13 +202,13 @@ def main():
                 
         elif choice == 2:
             xml_file_path = input("Enter the path to a XML file: ").strip().strip('"')
-            if not xml_file_path or os.path.exists(xml_file_path):
+            if not xml_file_path or not os.path.exists(xml_file_path):
                 raise FileNotFoundError("Specified .xml file not found! Try again.")
             elif not xml_file_path.endswith(".xml"):
                 raise InvalidFileFormat("Invalid file format! Should be .xml!")
         
             apple_file_path = input("Enter the path to a .strings file: ").strip().strip('"')
-            if not apple_file_path or os.path.exists(apple_file_path):
+            if not apple_file_path or not os.path.exists(apple_file_path):
                 raise FileNotFoundError("Specified .strings file not found! Try again.")
             elif not apple_file_path.endswith(".strings"):
                 raise InvalidFileFormat("Invalid file format! Should be .strings!")
