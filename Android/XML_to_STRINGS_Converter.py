@@ -1,9 +1,16 @@
-import xml.etree.ElementTree as ET
 import msvcrt
 import time
 import re
 import os
 
+try:
+    from lxml import etree as ET
+except ImportError:
+    import subprocess
+    import sys
+    print("Module 'lxml' not found. Installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "lxml"])
+    from lxml import etree as ET
 
 APP_NAME = os.path.basename(__file__).replace("_", " ").strip(".py")
 
@@ -108,66 +115,66 @@ def choice_input(msg:str, options:list[int]):
     except ValueError:
         print("Invalid choice! Try again."); time.sleep(1); choice_input(msg, options)
 
-def file_input(kind:str, extension:str, default:str = ""):
+def file_input(kind: str, extension: str, default: str = ""):
     try:
-        file_path = ""
         extension = f".{extension.lower()}"
-        
+        file_path = ""
+
         if kind == "new":
             file_path = input(f"Enter a name of {extension} output file" + (f" (default: {default}): " if default else ": ")).strip()
 
             if not file_path and default:
                 file_path = default
 
+            file_path = file_path + extension
+
             if not is_valid_windows_filename(os.path.basename(file_path)):
                 raise InvalidFileFormat("Filename contains invalid characters, ends with space/dot, or uses a reserved name.")
-                
-            file_path = file_path + extension
-                
+
             print()
-            
+
             while os.path.exists(file_path):
-                file_name = os.path.basename(file_path).strip(extension)
-                choice = choice_input(f"File '{file_name}' already exists! Would you like to overwrite the file?\n1. Yes\n2. No\n>>> ", [1,2])
+                file_name = os.path.basename(file_path)
+                choice = choice_input(f"File '{file_name}' already exists! Would you like to overwrite the file?\n1. Yes\n2. No\n>>> ", [1, 2])
                 if choice == 1:
                     break
-                elif choice == 2:
-                    match = re.match(r'^([\w\-. ]+ )\((\d+)\)(\.\w+)$', file_path)
+                else:
+                    match = re.match(r'^(.*?)(?: \((\d+)\))?(\.\w+)$', file_path)
                     if match:
                         name = match.group(1)
-                        count = int(match.group(2))
+                        count = int(match.group(2)) + 1 if match.group(2) else 1
                         ext = match.group(3)
-                        file_path = f"{name}({count + 1}){ext}"
+                        file_path = f"{name} ({count}){ext}"
                     else:
                         name, ext = os.path.splitext(file_path)
                         file_path = f"{name} (1){ext}"
-        
+
         elif kind == "existing":
             file_path = input(f"Enter the path to a {extension} file: ").strip().strip('"')
-            
+
             if not file_path or not os.path.exists(file_path):
                 raise FileNotFoundError(f"Specified {extension} file not found! Try again.")
-            elif not file_path.endswith(extension):
+            elif not file_path.lower().endswith(extension):
                 raise InvalidFileFormat(f"Invalid file format! Should be {extension}!")
-            
+
         return file_path
 
-    except FileNotFoundError as e:
-        print(str(e)); time.sleep(1); return file_input(kind, extension, default)
-    except InvalidFileFormat as e:
-        print(str(e)); time.sleep(1); return file_input(kind, extension, default)
+    except (FileNotFoundError, InvalidFileFormat) as e:
+        print(str(e))
+        time.sleep(1)
+        return file_input(kind, extension.strip("."), default)
 
 def get_xml_strings(file_path: str):
-    tree = ET.parse(file_path)
+    tree = ET.parse(file_path, parser=None)
     root = tree.getroot()
     strings = {}
-    
+
     for child in root.iter("string"):
-        name = child.get("name", None)
+        name = child.get("name")
         if name:
             text = child.text
-            strings.setdefault(name, text)
-    
+            strings[name] = text
+
     return strings
 
 def export_strings(file_path: str, strings: dict):
@@ -187,7 +194,11 @@ def export_strings(file_path: str, strings: dict):
         return False
     
     file_path = os.path.basename(file_path)
-    print_box([f"Total strings: {len(strings)}",f"Exported strings: {exported_strings_count}", f"Strings have been written to {file_path} file!"])
+    print_box([
+        f"Total strings: {len(strings)}",
+        f"Exported strings: {exported_strings_count}",
+        f"Strings have been written to {file_path} file!"
+    ])
     return True
 
 def get_apple_strings(file_path: str):
@@ -218,36 +229,33 @@ def get_apple_strings(file_path: str):
 
 def import_strings(source_file: str, output_file: str, strings: dict):
     try:
-        tree = ET.parse(source_file)
+        tree = ET.parse(source_file, parser=None)
         root = tree.getroot()
         import_strings_count = 0
         
         for str_obj in root.iter("string"):
             obj_name = str_obj.get("name")
             if obj_name in strings and obj_name:
-                old_text = str_obj.text # type: ignore
+                old_text = str_obj.text
                 new_text = strings[obj_name]
-                if old_text != new_text and str_obj.text is not None:
+                if old_text != new_text and old_text is not None:
                     print(f"Changed: {obj_name}")
-                    print(f"  From: {repr(str_obj.text)}")
+                    print(f"  From: {repr(old_text)}")
                     print(f"  To:   {repr(new_text)}")
                     str_obj.text = new_text
-                    
-                    if str_obj.tail and str_obj.tail.strip() == "":
-                        str_obj.tail = str_obj.tail
-                    else:
-                        str_obj.tail = "\n    "
-                    
                     import_strings_count += 1
 
         if import_strings_count != 0:
-            tree.write(output_file, encoding="utf-8", xml_declaration=True)
+            tree.write(output_file, encoding="utf-8", xml_declaration=True, pretty_print=True)
             output_file = os.path.basename(output_file)
-            print_box([f"Total strings: {len(root.items())}",f"Imported strings: {import_strings_count}", f"Strings have been imported to {output_file}!"])
-            print()
+            print_box([
+                f"Total strings: {len(root.xpath('.//string'))}",
+                f"Imported strings: {import_strings_count}",
+                f"Strings have been imported to {output_file}!"
+            ])
         else:
             print("Found no strings to update!")
-        
+    
     except Exception as e:
         print(f"Import error: {e}")
 
@@ -277,7 +285,7 @@ def main():
         
             apple_file_path = file_input("existing", "strings")
             
-            output_file = file_input("new", "strings", "strings_edited")
+            output_file = file_input("new", "xml", "strings_edited")
                 
             print()
             
