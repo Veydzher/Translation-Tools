@@ -267,7 +267,7 @@ def import_strings(source_file: str, output_file: str, strings: dict, detailed_o
                 old_text = str_obj.text
                 new_text = strings[obj_name]
                 if old_text != new_text and old_text is not None:
-                    success_import_strings.append("Changed: {}\n\tFrom: {}\n\tTo:   {}\n".format(obj_name, old_text, new_text))
+                    success_import_strings.append("\tKey: \"{}\"\n\tOld: {}\n\tNew: {}\n".format(obj_name, old_text, new_text))
                     str_obj.text = new_text
                     import_strings_count += 1
                 else:
@@ -278,7 +278,7 @@ def import_strings(source_file: str, output_file: str, strings: dict, detailed_o
                 with open("success_import_strings.txt", "w+", encoding="utf-8") as sf:
                     sf.write("Successfully exported the following strings:\n")
                     for ses in success_import_strings:
-                        sf.write("{}".format(ses))
+                        sf.write("{}\n".format(ses))
             
             if failed_import_strings:
                 with open("failed_import_strings.txt", "w+", encoding="utf-8") as ff:
