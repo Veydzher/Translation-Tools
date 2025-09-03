@@ -271,7 +271,7 @@ def import_strings(source_file: str, output_file: str, strings: dict, detailed_o
                     str_obj.text = new_text
                     import_strings_count += 1
                 else:
-                    failed_import_strings.append(f"Old: \"{old_text}\", New: \"{new_text}\"")
+                    failed_import_strings.append(f"\tOld: \"{old_text}\"\n\tNew: \"{new_text}\"\n")
         
         if detailed_output:
             if success_import_strings:
@@ -284,7 +284,7 @@ def import_strings(source_file: str, output_file: str, strings: dict, detailed_o
                 with open("failed_import_strings.txt", "w+", encoding="utf-8") as ff:
                     ff.write("Failed to import the following strings:\n")
                     for fis in failed_import_strings:
-                        ff.write("\t{}\n".format(fis))
+                        ff.write("{}\n".format(fis))
 
         if import_strings_count != 0:
             tree.write(output_file, encoding="utf-8", xml_declaration=True, pretty_print=True)
