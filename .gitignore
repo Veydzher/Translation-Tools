@@ -1,3 +1,10 @@
+# Custom
+dump
+Unity
+*.txt
+*.xml
+*.strings
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
