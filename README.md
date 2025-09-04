@@ -1,2 +1,2 @@
 # Translation Tools
-Translation tools. Most of them made in Python.
+Tools for some platforms/engines. Most of them made in Python.
