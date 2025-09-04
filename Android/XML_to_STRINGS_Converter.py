@@ -3,7 +3,6 @@ import os
 import sys
 import time
 import json
-# import msvcrt
 import logging
 import platform
 import subprocess
@@ -596,7 +595,7 @@ class Config:
     def get_defaults(self):
         return {
             "detailed_export": False,
-            "detailed_import": True,
+            "detailed_import": False,
             "log_level": "INFO"
         }
     
@@ -618,7 +617,6 @@ if __name__ == "__main__":
     try:
         app = XMLtoSTRINGS()
     except Exception as e:
-        # Final fallback logging
         logging.basicConfig(level=logging.ERROR)
         logging.error(f"Critical error starting application: {e}")
         print(f"Critical error: {e}")
