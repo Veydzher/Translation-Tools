@@ -1,10 +1,12 @@
 import re
 import os
+import sys
 import time
 import json
-import msvcrt
+# import msvcrt
 import logging
 import platform
+import subprocess
 from pathlib import Path
 
 try:
@@ -15,6 +17,13 @@ except ImportError:
     print("Module 'lxml' not found. Installing...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "lxml"])
     from lxml import etree as ET # type: ignore
+
+try:
+    import readchar # type: ignore
+except ImportError:
+    print("Module 'readchar' not found. Installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "readchar"])
+    import readchar # type: ignore
 
 class InvalidFileExtension(BaseException): ...
 class UserCancelled(BaseException): ...
@@ -98,8 +107,6 @@ class XMLtoSTRINGS:
                 self.print_box([self.ts["app_title"], "Github: https://github.com/Veydzher/Translation-Tools"], 6, 2, "center")
                 choice = self.choice_input("", {1: self.ts["menu_option_1"], 2: self.ts["menu_option_2"], 3: self.ts["menu_option_3"], 4: self.ts["menu_option_4"]})
                 
-                self.logger.info(f"User selected menu option: {choice}")
-                
                 if choice == 1:
                     self.logger.info("Starting XML to STRINGS export process")
                     xml_file_path = self.file_input("existing", "xml")
@@ -153,9 +160,9 @@ class XMLtoSTRINGS:
                 
                 else:
                     self.logger.warning(f"Invalid menu choice: {choice}")
-                    break
+                    continue
                 
-                print(f"\n{self.ts['press_any_key_to_exit']}"); msvcrt.getch(); self.main()
+                print(f"\n{self.ts['press_any_key_to_exit']}"); readchar.readkey(); self.main()
             
             except FileNotFoundError as e:
                 self.logger.error(f"File not found: {str(e)}")
@@ -172,7 +179,7 @@ class XMLtoSTRINGS:
             except Exception as e:
                 self.logger.exception(f"Unexpected error in main loop: {str(e)}")
                 print(f"{self.ts['unexpected_error'].format(str(e))}\n{self.ts['press_any_key_to_exit']}")
-                msvcrt.getch()
+                readchar.readkey()
                 break
             
     def open_settings(self):
@@ -390,28 +397,12 @@ class XMLtoSTRINGS:
             self.logger.warning(f"Invalid menu choice entered")
             return None
     
-    def getch(self):
-        try:
-            # Windows
-            return msvcrt.getwch()
-        except ImportError:
-            # Unix (Linux/macOS)
-            import sys, tty, termios
-            fd = sys.stdin.fileno()
-            old_settings = termios.tcgetattr(fd) # type: ignore
-            try:
-                tty.setraw(fd) # type: ignore
-                ch = sys.stdin.read(1)
-            finally:
-                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings) # type: ignore
-            return ch
-    
     def file_input(self, kind: str, extension: str, default: str = ""):
         def esc_input(prompt: str):
             print(prompt, end="", flush=True)
             buffer = ""
             while True:
-                ch = self.getch()
+                ch = readchar.readkey()
                 if ch == '\r':  # Enter
                     print()
                     return buffer.strip().strip('"') if buffer else ""
